@@ -1,5 +1,4 @@
 import pandas as pd
-import re
 from collections import Counter
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
@@ -16,11 +15,12 @@ df = pd.read_csv("TweetsElonMusk.csv")
 # 2. WORDS WE DO NOT COUNT
 # ============================================================
 
-excluded_words = {
+excluded_words = { #&amp; is & html encoded
     "the", "that", "an", "a", "for",
     "in", "be", "by", "or", "and", "with",
     "is", "to", "but", "it", "we", "of", "i",
-    "s", "if", "will","on"
+    "if", "will","on", "&amp;", "this", "are", "at", "as"
+
 }
 
 # ============================================================
@@ -32,25 +32,8 @@ def clean_tweet(text):
     # Convert everything to lowercase
     text = str(text).lower()
 
-    # Remove URLs
-    text = re.sub(
-        r"https?://\S+|www\.\S+",
-        " ",
-        text
-    )
-
-    # Remove @usernames
-    text = re.sub(
-        r"@\w+",
-        " ",
-        text
-    )
-
-    # Keep only alphabetic words
-    words = re.findall(
-        r"[a-z]+(?:'[a-z]+)?",
-        text
-    )
+    # Split words by space. Note: this will make "great", "great," and "great!" seperate words.
+    words = text.split()
 
     # Remove excluded words
     words = [
@@ -217,8 +200,6 @@ def create_comparison(number_of_words):
 create_comparison(10)
 create_comparison(30)
 create_comparison(50)
-
-
 # ============================================================
 # 7. PART 2
 # WORD CLOUDS ONLY
