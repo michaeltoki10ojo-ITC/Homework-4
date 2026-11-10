@@ -1,0 +1,312 @@
+import pandas as pd
+import re
+from collections import Counter
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
+
+
+# ============================================================
+# 1. LOAD THE CSV FILE
+# ============================================================
+
+df = pd.read_csv("TweetsElonMusk.csv")
+
+
+# ============================================================
+# 2. WORDS WE DO NOT COUNT
+# ============================================================
+
+excluded_words = {
+    "the", "that", "an", "a", "for",
+    "in", "be", "by", "or", "and", "with",
+    "is", "to", "but", "it", "we", "of", "i",
+    "s", "if", "will","on"
+}
+
+# ============================================================
+# 3. CLEAN EACH TWEET
+# ============================================================
+
+def clean_tweet(text):
+
+    # Convert everything to lowercase
+    text = str(text).lower()
+
+    # Remove URLs
+    text = re.sub(
+        r"https?://\S+|www\.\S+",
+        " ",
+        text
+    )
+
+    # Remove @usernames
+    text = re.sub(
+        r"@\w+",
+        " ",
+        text
+    )
+
+    # Keep only alphabetic words
+    words = re.findall(
+        r"[a-z]+(?:'[a-z]+)?",
+        text
+    )
+
+    # Remove excluded words
+    words = [
+        word
+        for word in words
+        if word not in excluded_words
+    ]
+
+    return words
+
+
+# ============================================================
+# 4. COUNT WORD FREQUENCIES
+# ============================================================
+
+word_counts = Counter()
+
+for tweet in df["tweet"].dropna():
+
+    words = clean_tweet(tweet)
+
+    word_counts.update(words)
+
+
+# ============================================================
+# 5. SAVE ALL WORD FREQUENCIES TO CSV
+# ============================================================
+
+frequency_df = pd.DataFrame(
+    word_counts.most_common(),
+    columns=["Word", "Frequency"]
+)
+
+frequency_df.to_csv(
+    "word_frequencies.csv",
+    index=False
+)
+
+print("word_frequencies.csv created.")
+print()
+
+print("Top 20 words:")
+print(frequency_df.head(20))
+print()
+
+
+# ============================================================
+# 6. PART 1
+# HORIZONTAL BAR CHART + WORD CLOUD
+# TOP 10, TOP 30, TOP 50
+# ============================================================
+
+def create_comparison(number_of_words):
+
+    print(
+        f"Creating Top {number_of_words} comparison..."
+    )
+
+    top_words = dict(
+        word_counts.most_common(
+            number_of_words
+        )
+    )
+
+    words = list(
+        top_words.keys()
+    )
+
+    frequencies = list(
+        top_words.values()
+    )
+
+    # Create two visuals side-by-side
+    fig, axes = plt.subplots(
+        1,
+        2,
+        figsize=(16, 8)
+    )
+
+
+    # -----------------------------
+    # Horizontal Bar Chart
+    # -----------------------------
+
+    axes[0].barh(
+        words[::-1],
+        frequencies[::-1]
+    )
+
+    axes[0].set_title(
+        f"Top {number_of_words} Words"
+    )
+
+    axes[0].set_xlabel(
+        "Frequency"
+    )
+
+    axes[0].set_ylabel(
+        "Words"
+    )
+
+    # Make labels smaller for 30 and 50 words
+    if number_of_words >= 30:
+
+        axes[0].tick_params(
+            axis="y",
+            labelsize=7
+        )
+
+
+    # -----------------------------
+    # Word Cloud
+    # -----------------------------
+
+    wordcloud = WordCloud(
+        width=900,
+        height=650,
+        background_color="white",
+        max_words=number_of_words
+    )
+
+    wordcloud.generate_from_frequencies(
+        top_words
+    )
+
+    axes[1].imshow(
+        wordcloud,
+        interpolation="bilinear"
+    )
+
+    axes[1].axis(
+        "off"
+    )
+
+    axes[1].set_title(
+        f"Top {number_of_words} Word Cloud"
+    )
+
+
+    # -----------------------------
+    # Save Image
+    # -----------------------------
+
+    plt.tight_layout()
+
+    filename = (
+        f"top_{number_of_words}_comparison.png"
+    )
+
+    plt.savefig(
+        filename,
+        dpi=150,
+        bbox_inches="tight"
+    )
+
+    plt.close(fig)
+
+    print(
+        f"Saved: {filename}"
+    )
+
+
+# Create Part 1 images
+create_comparison(10)
+create_comparison(30)
+create_comparison(50)
+
+
+# ============================================================
+# 7. PART 2
+# WORD CLOUDS ONLY
+# TOP 100, TOP 150, TOP 200, TOP 250
+# ============================================================
+
+def create_wordcloud(number_of_words):
+
+    print(
+        f"Creating Top {number_of_words} word cloud..."
+    )
+
+    top_words = dict(
+        word_counts.most_common(
+            number_of_words
+        )
+    )
+
+    wordcloud = WordCloud(
+        width=1400,
+        height=800,
+        background_color="white",
+        max_words=number_of_words
+    )
+
+    wordcloud.generate_from_frequencies(
+        top_words
+    )
+
+
+    # Create figure
+    fig, ax = plt.subplots(
+        figsize=(14, 8)
+    )
+
+    ax.imshow(
+        wordcloud,
+        interpolation="bilinear"
+    )
+
+    ax.axis(
+        "off"
+    )
+
+    ax.set_title(
+        f"Top {number_of_words} Most Frequently Used Words"
+    )
+
+
+    # Save image
+    filename = (
+        f"wordcloud_{number_of_words}.png"
+    )
+
+    plt.savefig(
+        filename,
+        dpi=150,
+        bbox_inches="tight"
+    )
+
+    plt.close(fig)
+
+    print(
+        f"Saved: {filename}"
+    )
+
+
+# Create Part 2 images
+create_wordcloud(100)
+create_wordcloud(150)
+create_wordcloud(200)
+create_wordcloud(250)
+
+
+# ============================================================
+# FINISHED
+# ============================================================
+
+print()
+print("DONE!")
+print("Part 1 and Part 2 are complete.")
+print()
+print("Files created:")
+print("word_frequencies.csv")
+print("top_10_comparison.png")
+print("top_30_comparison.png")
+print("top_50_comparison.png")
+print("wordcloud_100.png")
+print("wordcloud_150.png")
+print("wordcloud_200.png")
+print("wordcloud_250.png")
